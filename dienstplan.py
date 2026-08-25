@@ -42,7 +42,7 @@ DATENSAETZE: dict[str, list[Mitarbeiter]] = {
     "C": [
         Mitarbeiter("Anna", True),
         Mitarbeiter("Ben", False),
-        Mitarbeiter("Clara", True),
+        Mitarbeiter("Clara", False),
         Mitarbeiter("David", False),
         Mitarbeiter("Eva", False),
         Mitarbeiter("Felix", False),
