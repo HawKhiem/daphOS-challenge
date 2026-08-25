@@ -1,0 +1,16 @@
+# Coding Challenge — Dienstplan
+
+**Starten:** `python dienstplan.py` (Python ≥ 3.12, keine Abhängigkeiten). Löst ohne Ruhezeit-Regel (`solve`); `python dienstplan.py --ruhezeit` erzwingt sie als harte Zusatzregel (`solve_ruhezeit`) — beide Wege sind vollständige, unabhängige Suchen, keine Kombination/Fallback zwischen den beiden. Für die faire Verteilung wird ausschließlich die Kandidaten-Sortierung nach aktuell geringster Schichtzahl genutzt (kein zusätzlicher Ausgleichs-Durchlauf danach) — dazu fehlte die Zeit, siehe "Mit mehr Zeit" unten.
+
+**Ergebnis:** Team A ist lösbar (Plan wird ausgegeben, Fairness-Spanne 1, mit `--ruhezeit` zusätzlich ohne Ruhezeit-Verstöße). **Team B und Team C sind beide unlösbar** — nicht nur "mindestens einer": B hat zu wenig Personal insgesamt (Kapazität 25 < Bedarf 28 Personenschichten/Woche), C hat zu wenig examinierte Kräfte. Details und Herleitung siehe
+`machbarkeit_analyse` in [`dienstplan.py`](dienstplan.py).
+
+**Annahmen:** Bei Gleichstand wählt der Solver deterministisch nach Namen, damit Läufe reproduzierbar sind.
+
+**Ansatz:** Erst notwendige Bedingungen durch Abzählen prüfen (`machbarkeit_analyse`, liefert bei Unlösbarkeit die konkrete Lücke, ganz ohne Suche), dann vollständiges Backtracking mit Forward-Checking (`rest_noch_moeglich`: nach jeder Zuteilung wird geprüft, ob die verbleibende Kapazität für die restlichen Slots noch reicht, sonst wird sofort zurückgesetzt) für den machbaren Fall. Ruhezeit ist über `--ruhezeit` als harte Zusatzregel zuschaltbar; die faire Verteilung ergibt sich aus der Kandidaten-Sortierung nach geringster Last.
+
+**Skalierung (40 Personen, 4 Wochen):** `machbarkeit_analyse` skaliert ohne Änderung, nur andere Zahlen. Am Solver bräuchte es zwei Fixes: das 5-Schichten-Limit gilt pro Woche, aber `last` zählt aktuell durchgehend — müsste auf 4 Wochenzähler pro Person umgestellt werden. Und `rest_noch_moeglich` prüft nur aggregiert, nicht pro Tag, was bei 40 Personen in Grenzfällen zu langer Suche führen könnte. Außerdem braucht mein Ansatz zur fairer Verteilung noch Verbesserungen. Hier würde ich auf CP-SAT Solver wechseln.
+
+**Mit mehr Zeit:** Unit-Tests für die Machbarkeits-Checks und den Solver. Konkret zur fairen Verteilung: nur greedy zu lösen war eine Zeit-Entscheidung — als Verbesserung würde ich einen Ausgleichs-Durchlauf nach der Suche ergänzen (Tausch der am stärksten belasteten Person gegen die am wenigsten belastete, wo regelkonform möglich), eine Empfehlung, auf die ich bei der Recherche zu Fairness-Heuristiken für Scheduling-Probleme gestoßen bin.
+
+**KI-Einsatz:** Modellierung, Machbarkeitsanalyse und Solver in `dienstplan.py` stammen von mir selbst; Claude (Anthropic) hat geholfen bei: README formatieren, der Ausgabe (Formatierung, `print_dienstplan`, `--ruhezeit`-CLI-Flag über `argparse`), der Formulierung der Fehlermeldungen in `machbarkeit_analyse` (die Texte in den `probleme.append(...)`-Aufrufen), beim Gegenchecken meines Modellierungsansatzes (CSP-Formalisierung, Nebenbedingungen, Herleitung der Strukturprüfung) gegen meine eigenen Notizen, und beim Verifizieren meines selbst geschriebenen Forward-Checks (`rest_noch_moeglich`) auf Korrektheit — inkl. einem Vergleichslauf mit/ohne Forward-Check an Team B, um zu zeigen, dass er tatsächlich etwas bringt.
